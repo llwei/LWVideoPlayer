@@ -5,6 +5,7 @@ Deployment Target iOS 7.0
 
 
 一、用法：
+
     // 初始化
     private var player = LWVideoPlayer()
     
