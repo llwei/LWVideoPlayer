@@ -51,8 +51,8 @@ class LWVideoPlayer: NSObject {
     
     // MARK:  Helper methods
     
-    private func setupPlayback(ofAsset asset: AVAsset?, withKeys keys: [String], videoPlayerView: LWVideoPlayerView) {
-        guard let asset = asset else { return }
+    private func setupPlayback(ofPlayerItem item: AVPlayerItem?, withKeys keys: [String], videoPlayerView: LWVideoPlayerView) {
+        guard let asset = item?.asset else { return }
         
         // Check whether the values of each of the keys we need has been successfully loaded
         for key in keys {
@@ -80,9 +80,10 @@ class LWVideoPlayer: NSObject {
         }
         
         // Create a new AVPlayerItem and make it the player's current item.
-        let playerItem = AVPlayerItem(asset: asset)
-        player?.replaceCurrentItemWithPlayerItem(playerItem)
+        player?.replaceCurrentItemWithPlayerItem(item)
         
+        // Add rate and status/loadedTimeRanges observers
+        addObservers()
     }
     
     
@@ -137,6 +138,8 @@ class LWVideoPlayer: NSObject {
             player?.removeObserver(self,
                                    forKeyPath: "currentItem.loadedTimeRanges",
                                    context: &LWVideoPlayerItemLoadedTimeRangesContext)
+            
+            player?.replaceCurrentItemWithPlayerItem(nil)
         }
 
         if let observer = currentProgressObserver {
@@ -238,13 +241,15 @@ extension LWVideoPlayer {
                                                           loadingFailedHandler: LoadingFailedHandler?,
                                                           playbackHandler: PlaybackHandler?) {
         
+        // Stop player
+        stop()
+        
         guard item.status != .Failed else {
             self.loadingFailedHandler?(error: item.error)
             return
         }
         
-        // Stop player and record repeatCount
-        stop()
+        // Record repeatCount
         repeatCount = count
         
         // Update input asset, and load the values of AVAsset keys to inspect subsequently
@@ -252,12 +257,9 @@ extension LWVideoPlayer {
         item.asset.loadValuesAsynchronouslyForKeys(assetKeysToLoadAndTest) {
             [unowned self] in
             dispatch_async(dispatch_get_main_queue(), { 
-                self.setupPlayback(ofAsset: item.asset, withKeys: assetKeysToLoadAndTest, videoPlayerView: videoPlayerView)
+                self.setupPlayback(ofPlayerItem: item, withKeys: assetKeysToLoadAndTest, videoPlayerView: videoPlayerView)
             })
         }
-        
-        // Add rate and status/loadedTimeRanges observers
-        addObservers()
         
         // Set up handlers
         self.loadingFailedHandler = loadingFailedHandler
@@ -271,8 +273,6 @@ extension LWVideoPlayer {
         
         // Reset progress parameters
         resetProgressParameters()
-     
-        player?.replaceCurrentItemWithPlayerItem(nil)
         
         // Set up old playerLayer.play to nil
         if let playerLayer = playerLayer {
