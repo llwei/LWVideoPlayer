@@ -5,6 +5,7 @@
 //  Created by lailingwei on 16/6/1.
 //  Copyright © 2016年 lailingwei. All rights reserved.
 //
+//  github: https://github.com/llwei/LWVideoPlayer
 
 import UIKit
 import AVFoundation
