@@ -309,6 +309,10 @@ extension LWVideoPlayer {
         return composable
     }
     
+    func currentItem() -> AVPlayerItem? {
+        return player?.currentItem
+    }
+    
 }
 
 
