@@ -13,16 +13,16 @@ private let CellIdentifier = "CellIdentifier"
 
 class TableViewController: UITableViewController {
 
-    private var player = LWVideoPlayer()
-    private var selectedRow: NSIndexPath?
-    private let assetUrls: [NSURL] = [
-        NSURL(string: "http://vf1.mtime.cn/Video/2012/04/23/mp4/120423212602431929.mp4")!,
-        NSURL(string: "http://vf1.mtime.cn/Video/2012/06/21/mp4/120621104820876931.mp4")!,
-        NSURL(string: "http://vf1.mtime.cn/Video/2012/04/23/mp4/120423212602431929.mp4")!,
-        NSURL(string: "http://vf1.mtime.cn/Video/2012/06/21/mp4/120621104820876931.mp4")!,
-        NSURL(string: "http://vf1.mtime.cn/Video/2012/04/23/mp4/120423212602431929.mp4")!,
-        NSURL(string: "http://vf1.mtime.cn/Video/2012/06/21/mp4/120621112404690593.mp4")!,
-        NSURL(string: "http://vf1.mtime.cn/Video/2012/06/21/mp4/120621104820876931.mp4")!]
+    fileprivate var player = LWVideoPlayer()
+    fileprivate var selectedRow: IndexPath?
+    fileprivate let assetUrls: [URL] = [
+        URL(string: "http://vf1.mtime.cn/Video/2012/04/23/mp4/120423212602431929.mp4")!,
+        URL(string: "http://vf1.mtime.cn/Video/2012/06/21/mp4/120621104820876931.mp4")!,
+        URL(string: "http://vf1.mtime.cn/Video/2012/04/23/mp4/120423212602431929.mp4")!,
+        URL(string: "http://vf1.mtime.cn/Video/2012/06/21/mp4/120621104820876931.mp4")!,
+        URL(string: "http://vf1.mtime.cn/Video/2012/04/23/mp4/120423212602431929.mp4")!,
+        URL(string: "http://vf1.mtime.cn/Video/2012/06/21/mp4/120621112404690593.mp4")!,
+        URL(string: "http://vf1.mtime.cn/Video/2012/06/21/mp4/120621104820876931.mp4")!]
     
     
     override func viewDidLoad() {
@@ -33,25 +33,25 @@ class TableViewController: UITableViewController {
         print("TableViewController.deinit")
     }
 
-    override func viewDidDisappear(animated: Bool) {
+    override func viewDidDisappear(_ animated: Bool) {
         super.viewDidDisappear(animated)
         player.stop()
     }
     
     // MARK: - Table view data source
 
-    override func tableView(tableView: UITableView, numberOfRowsInSection section: Int) -> Int {
+    override func tableView(_ tableView: UITableView, numberOfRowsInSection section: Int) -> Int {
         return assetUrls.count
     }
     
-    override func tableView(tableView: UITableView, cellForRowAtIndexPath indexPath: NSIndexPath) -> UITableViewCell {
-        let cell = tableView.dequeueReusableCellWithIdentifier(CellIdentifier, forIndexPath: indexPath)
+    override func tableView(_ tableView: UITableView, cellForRowAt indexPath: IndexPath) -> UITableViewCell {
+        let cell = tableView.dequeueReusableCell(withIdentifier: CellIdentifier, for: indexPath)
         return cell
     }
     
-    override func tableView(tableView: UITableView, didSelectRowAtIndexPath indexPath: NSIndexPath) {
+    override func tableView(_ tableView: UITableView, didSelectRowAt indexPath: IndexPath) {
         
-        if selectedRow?.row == indexPath.row {
+        if (selectedRow as NSIndexPath?)?.row == (indexPath as NSIndexPath).row {
             // 暂停/继续播放
             if player.playing() {
                 player.pause()
@@ -62,8 +62,8 @@ class TableViewController: UITableViewController {
             // 切换视频资源
             selectedRow = indexPath
             
-            if let preview = tableView.cellForRowAtIndexPath(indexPath)?.contentView.viewWithTag(1) as? LWVideoPlayerView {
-                let item = AVPlayerItem(URL: assetUrls[indexPath.row])
+            if let preview = tableView.cellForRow(at: indexPath)?.contentView.viewWithTag(1) as? LWVideoPlayerView {
+                let item = AVPlayerItem(url: assetUrls[(indexPath as NSIndexPath).row])
                 player.replaceCurrentItemWithPlayerItem(item,
                                                         videoPlayerView: preview,
                                                         playRepeatCount: 0,
@@ -83,8 +83,8 @@ class TableViewController: UITableViewController {
         }
     }
     
-    override func tableView(tableView: UITableView, didEndDisplayingCell cell: UITableViewCell, forRowAtIndexPath indexPath: NSIndexPath) {
-        if selectedRow?.row == indexPath.row {
+    override func tableView(_ tableView: UITableView, didEndDisplaying cell: UITableViewCell, forRowAt indexPath: IndexPath) {
+        if (selectedRow as NSIndexPath?)?.row == (indexPath as NSIndexPath).row {
             player.stop()
             selectedRow = nil
         }

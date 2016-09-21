@@ -13,29 +13,29 @@ import AVFoundation
 private var LWVideoPlayerItemStatusContext = "LWVideoPlayerItemStatusContext"
 private var LWVideoPlayerItemLoadedTimeRangesContext = "LWVideoPlayerItemLoadedTimeRangesContext"
 
-typealias LoadingFailedHandler = ((error: NSError?) -> Void)
-typealias PlaybackHandler = ((readyToPlay: Bool, current: Float64, loadedBuffer: Float64, totalBuffer: Float64, finished: Bool) -> Void)
+typealias LoadingFailedHandler = ((_ error: NSError?) -> Void)
+typealias PlaybackHandler = ((_ readyToPlay: Bool, _ current: Float64, _ loadedBuffer: Float64, _ totalBuffer: Float64, _ finished: Bool) -> Void)
 
 
 class LWVideoPlayer: NSObject {
     
     // MARK: Properties
     
-    private var player: AVPlayer? = AVPlayer()
-    private var playerLayer: LWVideoPlayerView?
+    fileprivate var player: AVPlayer? = AVPlayer()
+    fileprivate var playerLayer: LWVideoPlayerView?
     
-    private var currentProgressObserver: AnyObject?
+    fileprivate var currentProgressObserver: AnyObject?
     
-    private var repeatCount: UInt = 0
-    private var composable: Bool = true
-    private var readyToPlay: Bool = false
+    fileprivate var repeatCount: UInt = 0
+    fileprivate var composable: Bool = true
+    fileprivate var readyToPlay: Bool = false
     
-    private var current: Float64 = 0
-    private var loadedBuffer: Float64 = 0
-    private var totalBuffer: Float64 = 0
+    fileprivate var current: Float64 = 0
+    fileprivate var loadedBuffer: Float64 = 0
+    fileprivate var totalBuffer: Float64 = 0
     
-    private var loadingFailedHandler: LoadingFailedHandler?
-    private var playbackHandler: PlaybackHandler?
+    fileprivate var loadingFailedHandler: LoadingFailedHandler?
+    fileprivate var playbackHandler: PlaybackHandler?
     
     
     // MARK:  Life cycle
@@ -52,43 +52,43 @@ class LWVideoPlayer: NSObject {
     
     // MARK:  Helper methods
     
-    private func setupPlayback(ofPlayerItem item: AVPlayerItem?, withKeys keys: [String], videoPlayerView: LWVideoPlayerView) {
+    fileprivate func setupPlayback(ofPlayerItem item: AVPlayerItem?, withKeys keys: [String], videoPlayerView: LWVideoPlayerView) {
         guard let asset = item?.asset else { return }
         
         // Check whether the values of each of the keys we need has been successfully loaded
         for key in keys {
             var error: NSError?
-            if asset.statusOfValueForKey(key, error: &error) == .Failed {
-                loadingFailedHandler?(error: error)
+            if asset.statusOfValue(forKey: key, error: &error) == .failed {
+                loadingFailedHandler?(error)
                 return
             }
         }
         
-        if !asset.playable {
+        if !asset.isPlayable {
             // Asset canot be played.
-            let error = LWVideoPlayerError.error(Code.ItemNotPlayable, failureReason: "Asset canot be played")
-            loadingFailedHandler?(error: error)
+            let error = LWVideoPlayerError.error(Code.itemNotPlayable, failureReason: "Asset canot be played")
+            loadingFailedHandler?(error)
             return
         }
         
         // Asset canot be used to create a composition(e.g. it may have protected content).
-        self.composable = asset.composable
+        self.composable = asset.isComposable
         
         // Set up an AVPlayerLayer
-        if asset.tracksWithMediaType(AVMediaTypeVideo).count > 0 {
+        if asset.tracks(withMediaType: AVMediaTypeVideo).count > 0 {
             videoPlayerView.player = player
             playerLayer = videoPlayerView
         }
         
         // Create a new AVPlayerItem and make it the player's current item.
-        player?.replaceCurrentItemWithPlayerItem(item)
+        player?.replaceCurrentItem(with: item)
         
         // Add rate and status/loadedTimeRanges observers
         addObservers()
     }
     
     
-    private func resetProgressParameters() {
+    fileprivate func resetProgressParameters() {
         current = 0
         loadedBuffer = 0
         totalBuffer = 0
@@ -97,39 +97,39 @@ class LWVideoPlayer: NSObject {
     
     // MARK:  Observers
     
-    private func addObservers() {
+    fileprivate func addObservers() {
         guard let player = player else { return }
         player.addObserver(self,
                     forKeyPath: "currentItem.status",
-                    options: .New,
+                    options: .new,
                     context: &LWVideoPlayerItemStatusContext)
         
         player.addObserver(self,
                     forKeyPath: "currentItem.loadedTimeRanges",
-                    options: .New,
+                    options: .new,
                     context: &LWVideoPlayerItemLoadedTimeRangesContext)
         
         // Update "current"
-        currentProgressObserver = player.addPeriodicTimeObserverForInterval(CMTimeMake(1, 1),
-                                                                             queue: dispatch_get_main_queue(),
-                                                                             usingBlock: {
+        currentProgressObserver = player.addPeriodicTimeObserver(forInterval: CMTimeMake(1, 1),
+                                                                             queue: DispatchQueue.main,
+                                                                             using: {
                                                                                 [unowned self] (time: CMTime) in
                                                                                 
                                                                                 self.current = CMTimeGetSeconds(time)
-                                                                                self.playbackHandler?(readyToPlay: self.readyToPlay,
-                                                                                                    current: self.current,
-                                                                                                    loadedBuffer: self.loadedBuffer,
-                                                                                                    totalBuffer: self.totalBuffer,
-                                                                                                    finished: false)
-        })
+                                                                                self.playbackHandler?(self.readyToPlay,
+                                                                                                    self.current,
+                                                                                                    self.loadedBuffer,
+                                                                                                    self.totalBuffer,
+                                                                                                    false)
+        }) as AnyObject?
         
-        NSNotificationCenter.defaultCenter().addObserver(self,
+        NotificationCenter.default.addObserver(self,
                                                          selector: #selector(LWVideoPlayer.plackbackFinished(_:)),
-                                                         name: AVPlayerItemDidPlayToEndTimeNotification,
+                                                         name: NSNotification.Name.AVPlayerItemDidPlayToEndTime,
                                                          object: player.currentItem)
     }
     
-    private func removeObservers() {
+    fileprivate func removeObservers() {
         
         if let _ = player?.currentItem {
             player?.removeObserver(self,
@@ -140,7 +140,7 @@ class LWVideoPlayer: NSObject {
                                    forKeyPath: "currentItem.loadedTimeRanges",
                                    context: &LWVideoPlayerItemLoadedTimeRangesContext)
             
-            player?.replaceCurrentItemWithPlayerItem(nil)
+            player?.replaceCurrentItem(with: nil)
         }
 
         if let observer = currentProgressObserver {
@@ -148,74 +148,74 @@ class LWVideoPlayer: NSObject {
             currentProgressObserver = nil
         }
         
-        NSNotificationCenter.defaultCenter().removeObserver(self)
+        NotificationCenter.default.removeObserver(self)
     }
     
-    override func observeValueForKeyPath(keyPath: String?,
-                                         ofObject object: AnyObject?,
-                                                  change: [String : AnyObject]?,
-                                                  context: UnsafeMutablePointer<Void>) {
+    override func observeValue(forKeyPath keyPath: String?,
+                                         of object: Any?,
+                                                  change: [NSKeyValueChangeKey : Any]?,
+                                                  context: UnsafeMutableRawPointer?) {
         
         if context == &LWVideoPlayerItemStatusContext {
-            if let status = change?[NSKeyValueChangeNewKey]?.integerValue {
+            if let status = change?[NSKeyValueChangeKey.newKey] as? Int {
                 switch status {
-                case AVPlayerItemStatus.ReadyToPlay.rawValue:
+                case AVPlayerItemStatus.readyToPlay.rawValue:
                     readyToPlay = true
                     // Update "totalBuffer"
                     if let item = player?.currentItem {
                         totalBuffer = CMTimeGetSeconds(item.duration)
                     }
-                case AVPlayerItemStatus.Failed.rawValue:
+                case AVPlayerItemStatus.failed.rawValue:
                     readyToPlay = false
-                    loadingFailedHandler?(error: player?.currentItem?.error)
+                    loadingFailedHandler?(player?.currentItem?.error as NSError?)
                 default:
                     readyToPlay = false
                     break
                 }
-                playbackHandler?(readyToPlay: readyToPlay,
-                                 current: current,
-                                 loadedBuffer: loadedBuffer,
-                                 totalBuffer: totalBuffer,
-                                 finished: false)
+                playbackHandler?(readyToPlay,
+                                 current,
+                                 loadedBuffer,
+                                 totalBuffer,
+                                 false)
             }
             
         } else if context == &LWVideoPlayerItemLoadedTimeRangesContext {
             // Update "loadedBuffer"
             if let item = player?.currentItem {
-                if let timeRange = item.loadedTimeRanges.first?.CMTimeRangeValue {
+                if let timeRange = item.loadedTimeRanges.first?.timeRangeValue {
                     let startSeconds = CMTimeGetSeconds(timeRange.start)
                     let durationSeconds = CMTimeGetSeconds(timeRange.duration)
                     
                     loadedBuffer = startSeconds + durationSeconds
-                    playbackHandler?(readyToPlay: readyToPlay,
-                                     current: current,
-                                     loadedBuffer: loadedBuffer,
-                                     totalBuffer: totalBuffer,
-                                     finished: false)
+                    playbackHandler?(readyToPlay,
+                                     current,
+                                     loadedBuffer,
+                                     totalBuffer,
+                                     false)
                 }
             }
         
         } else {
-            super.observeValueForKeyPath(keyPath,
-                                         ofObject: object,
+            super.observeValue(forKeyPath: keyPath,
+                                         of: object,
                                          change: change,
                                          context: context)
         }
     }
     
-    func plackbackFinished(notification: NSNotification) {
+    func plackbackFinished(_ notification: Notification) {
         guard let item = notification.object as? AVPlayerItem else { return }
         guard item == player?.currentItem else { return }
         
         if repeatCount == 0 {
-            playbackHandler?(readyToPlay: readyToPlay,
-                             current: current,
-                             loadedBuffer: loadedBuffer,
-                             totalBuffer: totalBuffer,
-                             finished: true)
+            playbackHandler?(readyToPlay,
+                             current,
+                             loadedBuffer,
+                             totalBuffer,
+                             true)
         } else {
             repeatCount -= 1
-            item.seekToTime(kCMTimeZero)
+            item.seek(to: kCMTimeZero)
             current = 0
             player?.play()
         }
@@ -236,7 +236,7 @@ extension LWVideoPlayer {
      - parameter loadingFailedHandler: loadingFailedHandler
      - parameter playbackHandler:      playbackHandler
      */
-    func replaceCurrentItemWithPlayerItem(item: AVPlayerItem,
+    func replaceCurrentItemWithPlayerItem(_ item: AVPlayerItem,
                                           videoPlayerView: LWVideoPlayerView,
                                           playRepeatCount count: UInt,
                                                           loadingFailedHandler: LoadingFailedHandler?,
@@ -245,8 +245,8 @@ extension LWVideoPlayer {
         // Stop player
         stop()
         
-        guard item.status != .Failed else {
-            self.loadingFailedHandler?(error: item.error)
+        guard item.status != .failed else {
+            self.loadingFailedHandler?(item.error as NSError?)
             return
         }
         
@@ -255,9 +255,9 @@ extension LWVideoPlayer {
         
         // Update input asset, and load the values of AVAsset keys to inspect subsequently
         let assetKeysToLoadAndTest = ["playable", "composable", "tracks", "duration"]
-        item.asset.loadValuesAsynchronouslyForKeys(assetKeysToLoadAndTest) {
+        item.asset.loadValuesAsynchronously(forKeys: assetKeysToLoadAndTest) {
             [unowned self] in
-            dispatch_async(dispatch_get_main_queue(), { 
+            DispatchQueue.main.async(execute: { 
                 self.setupPlayback(ofPlayerItem: item, withKeys: assetKeysToLoadAndTest, videoPlayerView: videoPlayerView)
             })
         }
@@ -293,14 +293,14 @@ extension LWVideoPlayer {
         return  player?.rate == 1.0 ? true : false
     }
     
-    func seekToProgress(progress: Float, completionHandler: ((Bool) -> Void)?) {
+    func seekToProgress(_ progress: Float, completionHandler: ((Bool) -> Void)?) {
         guard let item = player?.currentItem else { return }
         guard 0 <= progress && progress <= 1 else { return }
         
         let secondes = CMTimeGetSeconds(item.duration) * Float64(progress)
         let time = CMTimeMakeWithSeconds(secondes, item.duration.timescale)
         
-        player?.seekToTime(time, completionHandler: { (flag: Bool) in
+        player?.seek(to: time, completionHandler: { (flag: Bool) in
             completionHandler?(flag)
         })
     }
@@ -321,7 +321,7 @@ extension LWVideoPlayer {
 
 class LWVideoPlayerView: UIView {
     
-    override class func layerClass() -> AnyClass {
+    override class var layerClass : AnyClass {
         return AVPlayerLayer.self
     }
     
@@ -350,7 +350,7 @@ class LWVideoPlayerView: UIView {
     var readyForDisplay: Bool {
         get {
             let playerLayer = layer as! AVPlayerLayer
-            return playerLayer.readyForDisplay
+            return playerLayer.isReadyForDisplay
         }
     }
     
@@ -370,7 +370,7 @@ class LWVideoPlayerView: UIView {
         }
         get {
             let playerLayer = layer as! AVPlayerLayer
-            return playerLayer.pixelBufferAttributes
+            return playerLayer.pixelBufferAttributes as [String : AnyObject]?
         }
     }
     
@@ -380,14 +380,14 @@ class LWVideoPlayerView: UIView {
 // MARK: - ============ LWVideoPlayerError ============
 
 enum Code: Int {
-    case ItemNotPlayable    = -1001
+    case itemNotPlayable    = -1001
 }
 
 struct LWVideoPlayerError {
     
     static let Domain = "com.lwvideoplayer.error"
     
-    static func error(code: Code, failureReason: String?) -> NSError {
+    static func error(_ code: Code, failureReason: String?) -> NSError {
         let userInfo = [NSLocalizedDescriptionKey : failureReason ?? ""]
         return NSError(domain: Domain, code: code.rawValue, userInfo: userInfo)
     }

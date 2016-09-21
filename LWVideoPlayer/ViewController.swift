@@ -12,8 +12,8 @@ import AVFoundation
 class ViewController: UIViewController {
     
     @IBOutlet weak var slider: UISlider!
-    private var player = LWVideoPlayer()
-    private var seeking = false
+    fileprivate var player = LWVideoPlayer()
+    fileprivate var seeking = false
     
     // MARK: - Life cycle
     
@@ -24,7 +24,7 @@ class ViewController: UIViewController {
         loadVideo(fetchAssetItemWithLocation(false))
     }
 
-    override func viewDidDisappear(animated: Bool) {
+    override func viewDidDisappear(_ animated: Bool) {
         super.viewDidDisappear(animated)
         player.stop()
     }
@@ -37,20 +37,20 @@ class ViewController: UIViewController {
     // MARK: - Helper methods
     
     // 获取要播放是视频资源
-    private func fetchAssetItemWithLocation(location: Bool) -> AVPlayerItem {
-        var url: NSURL!
+    fileprivate func fetchAssetItemWithLocation(_ location: Bool) -> AVPlayerItem {
+        var url: URL!
         if location {
-            if let filePath = NSBundle.mainBundle().pathForResource("sample_clip1", ofType: "m4v") {
-                url = NSURL(fileURLWithPath: filePath)
+            if let filePath = Bundle.main.path(forResource: "sample_clip1", ofType: "m4v") {
+                url = URL(fileURLWithPath: filePath)
             }
         } else {
-            url = NSURL(string: "http://vf1.mtime.cn/Video/2012/04/23/mp4/120423212602431929.mp4")
+            url = URL(string: "http://vf1.mtime.cn/Video/2012/04/23/mp4/120423212602431929.mp4")
         }
-        return AVPlayerItem(URL: url)
+        return AVPlayerItem(url: url)
     }
     
     // 加载视频
-    private func loadVideo(item: AVPlayerItem) {
+    fileprivate func loadVideo(_ item: AVPlayerItem) {
         player.replaceCurrentItemWithPlayerItem(item,
                                                 videoPlayerView: view as! LWVideoPlayerView,
                                                 playRepeatCount: 1,
@@ -81,28 +81,28 @@ class ViewController: UIViewController {
     // MARK: - Target actions
     
     // 播放
-    @IBAction func play(sender: AnyObject) {
+    @IBAction func play(_ sender: AnyObject) {
         player.play()
     }
     
     // 暂停
-    @IBAction func pause(sender: AnyObject) {
+    @IBAction func pause(_ sender: AnyObject) {
         player.pause()
     }
     
     // 拖动进度
-    @IBAction func seek(sender: UISlider) {
+    @IBAction func seek(_ sender: UISlider) {
         seeking = true
         player.seekToProgress(sender.value, completionHandler: nil)
     }
     
-    @IBAction func endSeek(sender: UISlider) {
+    @IBAction func endSeek(_ sender: UISlider) {
         seeking = false
     }
     
     // 切换视频
-    @IBAction func next(sender: UIBarButtonItem) {
-        let flag = rand() % 2 == 1
+    @IBAction func next(_ sender: UIBarButtonItem) {
+        let flag = arc4random() % 2 == 1
         let item = fetchAssetItemWithLocation(flag)
         
         loadVideo(item)
